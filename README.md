@@ -1,6 +1,9 @@
 # Wine Quality Prediction 
 Data Analysis Project on Wine Quality Prediction
 
+# Source
+The dataset was taken from the UCI Machine Learning Repository. The dataset can be found at https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/
+
 # Problem Description
 Wine quality rating is usually depending on sensory testing -> highly subjective.  
 It affects the speed and accuracy of wine quality rating.  
