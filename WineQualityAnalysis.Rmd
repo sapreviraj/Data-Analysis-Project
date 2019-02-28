@@ -1,0 +1,441 @@
+---
+title: "Wine Quality Analysis"
+author: "Salma Omai ,Viraj Sapre, Aylin Kosar, Surya Aenuganti Ushashri,Nicolas Romero"
+date: "December 4, 2018"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  word_document: default
+---
+Wine Quality Analysis:
+
+Initially we install the required libraries for our analysis and load them into our code.
+
+```{r}
+library(ggplot2)# Package for data visualization
+library(stats)# Package for statistical measurements and cook's distance
+library(e1071)# Package for skewness function and used for data analytics
+library(caTools)# Package for validation of models 
+library(graphics)# Package for function Plots
+library(plotly)# Package for interactive graphing 
+library(gridExtra)# Package for arranging different plots in a single grid
+library(Amelia)# Package for missing values
+```
+About the Dataset:
+Our Dataset is taken from the Penn State Eberly College of Science dataset repository. It
+contains wines produced in Portugal. There are 4898 varieties with 12 different  chemical properties. It contains Quality variable which is of int type & and Other 11 numeric type
+
+
+Laoding the Dataset: We read the dataset and load it into our code 
+
+```{r}
+
+wine.url<-"https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-white.csv"
+wine.raw<- read.csv(wine.url, header = TRUE, sep = ";")
+wine <- wine.raw
+head(wine) # we display the first six rows of the dataset here
+```
+
+```{r}
+str(wine)# we understand the structure of the dataset 
+```
+From the structure we can say that the dataset consists of around 4898 wine samples or observations with 12 variables. Of the total variables, the quality variable is of integer type and the others are all numeric. The response variable for this dataset will be quality as we are going to determine the quality of the wine sample based on its chemical properties.
+
+
+HANDLING MISSING VALUES:
+
+```{r}
+missmap(wine, main = "Missing values vs Observed values")
+```
+
+After trying to find the missing values we observe from the above plot that our dataset contains no missing values and is already a clean dataset. 
+So we move on to understand each variable and its distribution
+
+
+VARIABLE DISTRIBUTION: 
+
+```{r}
+#table(wine$quality) # we obtain the table for quality variable
+```
+We can see that the number of observations are very scarce in the extremes of the quality scale
+
+```{r}
+barplot((table(wine$quality)), col=c("slateblue4", "slategray", "slategray1", "slategray2", "slategray3", "skyblue4"), xlab = 'Quality')
+```
+
+From the graph, we can see that the quality variable has much of the observations with the values 5,6,7. 
+
+Target Variable:  Quality is the response variable ranging from 0-9 score. Also we will classify the wine samples based on the quality so we select this as our target variable.
+
+
+```{r}
+
+# Plotting histograms of each variable to understand the variable distribution 
+attach(wine)
+par(mfrow=c(2,2), oma = c(1,1,0,0) + 0.1, mar = c(3,3,1,1) + 0.1)
+hist(fixed.acidity, col="slategray3")
+hist(volatile.acidity, col="slategray2")
+hist(citric.acid, col="slategray1")
+hist(residual.sugar, col="slategray")
+
+```
+
+```{r}
+# Plotting histograms of each variable to understand the variable distribution
+attach(wine)
+par(mfrow=c(2,2), oma = c(1,1,0,0) + 0.1, mar = c(3,3,1,1) + 0.1)
+hist(density, col="slategray3")
+hist(pH, col="slategray2")
+hist(alcohol, col="slategray1")
+hist(sulphates, col="slategray")
+```
+
+```{r}
+# Plotting histograms of each variable to understand the variable distribution
+attach(wine)
+par(mfrow=c(2,2), oma = c(1,1,0,0) + 0.1, mar = c(3,3,1,1) + 0.1)
+hist(chlorides, col="slategray3")
+hist(free.sulfur.dioxide, col="slategray2")
+hist(total.sulfur.dioxide, col="slategray1")
+```
+
+
+
+OUTLIER DETECTION
+
+```{r}
+# Plotting jitterplot to get a further idea of outlier points
+#par(mfrow = c(6,2))
+for (i in c(1:11)) {
+    plot(wine[, i], jitter(wine[, "quality"]), xlab = names(wine)[i],
+         ylab = "quality", col = "Skyblue", cex = 0.8, cex.lab = 1.3)
+    abline(lm(wine[, "quality"] ~ wine[ ,i]), lty = 2, lwd = 2)
+}
+#par(mfrow = c(1, 1))
+```
+
+```{r}
+# Plotting boxplots to ubderstand about the outliers in each variable
+attach(wine)
+par(mfrow=c(1,11), oma = c(1,1,0,0) + 0.1,  mar = c(3,3,1,1) + 0.1)
+boxplot(fixed.acidity, col="skyblue", pch=19)
+mtext("Fixed Acidity", cex=0.8, side=1, line=2)
+boxplot(volatile.acidity, col="skyblue2", pch=19)
+mtext("Volatile Acidity", cex=0.8, side=1, line=2)
+boxplot(citric.acid, col="slategray2", pch=19)
+mtext("Citric Acid", cex=0.8, side=1, line=2)
+boxplot(residual.sugar, col="slategray1", pch=19)
+mtext("Residual Sugar", cex=0.8, side=1, line=2)
+boxplot(chlorides, col="slategray3", pch=19)
+mtext("Chlorides", cex=0.8, side=1, line=2)
+boxplot(pH, col="slategray4", pch=19)
+mtext("pH", cex=0.8, side=1, line=2)
+boxplot(sulphates, col="slategray", pch=19)
+mtext("Sulphates", cex=0.8, side=1, line=2)
+boxplot(density, col="grey", pch=19)
+mtext("Density", cex=0.8, side=1, line=2)
+boxplot(alcohol, col="white", pch=19)
+mtext("aclohol", cex=0.8, side=1, line=2)
+boxplot(total.sulfur.dioxide, col="lightblue", pch=19)
+mtext("Total SO2", cex=0.8, side=1, line=2)
+boxplot(free.sulfur.dioxide, col="slategray", pch=19)
+mtext("Fixed SO2", cex=0.8, side=1, line=2)
+
+```
+From the above boxplots we observe many outliers in the chlorides, total sulfur dioxide,  free sulfur dioxide and sulphates. We further will try to remove the outliers.
+
+
+
+VARIABLES RELATIONSHIP: 
+
+```{r}
+# Plotting spearman correlation and plot to understand the correlation between varaibles
+summary(wine)
+library(psych)
+describe(wine)
+cor(wine[,-12])
+cor(wine[,-12], method="spearman")
+pairs(wine[,-12], gap=0, pch=19, cex=0.4, col="slategray")
+title(sub="Scatterplot of Chemical Attributes", cex=0.8)
+```
+We see the further correlation between all the variables. We observe that we have strong correlation between residual sugar and density.Also we can see many positive relationships between alchol and density, residual sugar and density.
+
+
+```{r}
+
+library(corrplot)
+par(mfrow = c(1,1))
+cor.wine <- cor(wine)
+corrplot(cor.wine, method = 'number')
+```
+
+We can see a positive relationship between residual sugar, density and alcohol significantly. This correlation overall shows a weak relation within the variables. 
+
+
+#VIRAJ
+DATA PREPARATION:
+
+Possibly the most important step in data preparation is to identify outliers. Since this is a multivariate data, we consider only those points which do not have any predictor variable value to be outside of limits constructed by boxplots. The following rule is applied:
+
+A predictor value is considered to be an outlier only if it is greater than Q3 + 1.5IQR
+The rationale behind this rule is that the extreme outliers are all on the higher end of the values and the distributions are all positively skewed. Application of this rule reduces the data size from 4898 to 4074.
+
+Data is randomly divided into Training data and Test Data with a split of 0.75 and we create training and testing data as 3:1 ratio. 
+
+```{r}
+#
+limout <- rep(0,11)
+for (i in 1:11){
+t1 <- quantile(wine[,i], 0.75)
+t2 <- IQR(wine[,i], 0.75)
+limout[i] <- t1 + 1.5*t2
+}
+wineIndex <- matrix(0, 4898, 11)
+for (i in 1:4898)
+for (j in 1:11){
+if (wine[i,j] > limout[j]) wineIndex[i,j] <- 1
+}
+wineInd <- apply(wineIndex, 1, sum)
+wineTemp <- cbind(wineInd, wine)
+Indexes <- rep(0, 208)
+j <- 1
+for (i in 1:4898){
+if (wineInd[i] > 0) {Indexes[j]<- i
+j <- j + 1}
+else j <- j
+}
+wineLib <-wine[-Indexes,]   # Inside of Q3+1.5IQR
+dim(wineLib)
+# Inside of Q3+1.5IQR
+```
+
+As we can see we almost find 824 outliers in the dataset which is about 1/5 th of our total dataset. 
+Removing these many outliers is not feasible for implementing a model. So we remove the more feasibly significant outliers required for building a better model. 
+
+```{r}
+# Removing a significant outlier in the dataset
+max.sug <- which(wine$residual.sugar == max(wine$residual.sugar))
+wine <- wine[-max.sug, ]
+dim(wine)
+```
+
+The residual sugar has a outlier which seems to be interesting.  In the EU, a wine with more than 45g/l of sugar is considered a sweet wine. The outlier has a residual.sugar level of 65.8. The next highest sugar level in the dataset is 31.6. Because the sample represents a different wine category than all the others and its sugar level is twice as much as the next highest sample, we remove it from the dataset. Additionally, the sugar outlier comes from the same sample as the density outlier, so removing it cleans up the density distribution as well.
+
+**Aylin** 
+
+For the Regression and the Decision Tree, the white wine data set was just used using the code below to convert the data from the url to a .csv file. 
+
+
+###**Regression**
+
+Below two simple regression models were done. The first model was used to see which variables would be signficant and then I would remove variables that were not signficant and create a new model, named f2. The second step was to do a stepwise regression and found the f2 model ended up having the same results as the stepwise regression model g. Below the model f2 shows the quality of the wine depends on the fixed.acidity, volatile.acidity, residual.sugar, free.sulfur.dioxide, density, pH, sulphates, and alcohol of the wine specifically white wine. 
+
+```{r}
+
+f = lm(quality~., data = wine)
+
+summary(f)
+
+```
+```{r}
+
+f2 = lm(quality ~ fixed.acidity + volatile.acidity + residual.sugar + free.sulfur.dioxide + density  + pH + sulphates + alcohol, data = wine)
+
+summary(f2)
+
+```
+
+
+#####**Stepwise Regression**
+
+Backwards stepwise regression was used and it removes variables from the model.
+The AIC is a -2793.63 and it is difficult to tell if it's a good fit for the model since the smaller the AIC value the better the fit. The R square is a 0.2806 or 28% variation in the model. 
+
+```{r}
+
+g = step(lm(quality ~ ., data = wine))
+
+g
+
+summary(g)
+
+```
+
+
+#####**Plots for Regression Model**
+
+The first plot shows a scatterplot matrix specifcally used for regression models. There is no relationship between the hat, sigma and cooks distance values among the coefficients. The plots for the residuals does show a relationship between the following coefficients, pH, sulphates, and alcohol. The other coefficents have a negative correlation with the residuals since it is left skewed. The second set of plots basically show there is no correlation in the three out of four plots since there is no actual pattern however many outliers. The qq plot does show that there is normality which means there is a correlation among the variables however there are some outliers. The histogram shows that the residuals are normally distributed while the box plot shows the same however there are many outliers.
+
+```{r message=FALSE, warning=FALSE}
+
+library(ggplot2)
+library(GGally)
+
+ggnostic(f2) 
+
+library(ggfortify)
+
+autoplot(f2, colour = "orangered")
+
+ggplot(data = f2, aes(x = f2$residuals)) +
+  geom_histogram(color = 'orange', fill = 'orangered')
+
+boxplot(f2$residuals,main="Residuals of Model")
+
+```
+
+#####**Weka**
+
+The Weka results for the linear regression in RWeka and Weka itself shows the same results with the values being slightly lower however the conclusion is still the same.
+
+```{r message=FALSE, warning=FALSE}
+
+library(RWeka)
+
+LinearRegression(lm(quality ~ fixed.acidity + volatile.acidity + residual.sugar + free.sulfur.dioxide + density  + pH + sulphates + alcohol, data = wine)) 
+
+LinearRegression(step(lm(quality ~ ., data = wine), trace = 0))
+
+```
+
+#####**Weka Output**
+
+Linear Regression Model
+
+quality =
+
+     -0.0001 *  +
+      0.03   * fixed.acidity +
+     -1.8859 * volatile.acidity +
+      0.0857 * residual.sugar +
+      0.0041 * free.sulfur.dioxide +
+     -0.0006 * total.sulfur.dioxide +
+   -155.1315 * density +
+      0.5225 * pH +
+      0.6972 * sulphates +
+      0.2076 * alcohol +
+    155.7705
+
+=== Summary ===
+
+Correlation coefficient                  0.5405
+Mean absolute error                      0.5767
+Root mean squared error                  0.7451
+Relative absolute error                 85.9683 %
+Root relative squared error             84.1349 %
+Total Number of Instances               4898 
+
+
+###**Decision Trees**
+
+The decision tree or regression tree shows that the quality of the white wine has an alcohol level lower than 10.85 then splits into whether the wine has a volatile acidity greater than or equal to 0.2525 or if not, then it has free sulfur dioxide less than 11.5. If the wine has a volatile acidity greater than or equal to 0.2525 then it gets split to two nodes, one signifying it has a value of 5.361 and a volatile acidity greater than or equal to 0.2075. If it has a volatile acidity greater than or equal to 0.2075 then it has a density less than 0.9979. The density node is split into two, either the wine has a density of 5.93 or 6.581.The right side of the tree shows if the wine has free sulfur dioxide less than 11.5 then it gets split into two nodes, it either has value of 5.412 or contains alcohol less than 11.74. If it contains alcohol less than 11.74 then it has a value of either 6.197 or 6.597. It can be concluded there are more wines with 32.87% volatile acidity.  
+
+
+```{r message=FALSE, warning=FALSE}
+
+library(rpart)
+library(rpart.plot) 
+
+p = rpart(quality ~ fixed.acidity + volatile.acidity + residual.sugar + free.sulfur.dioxide + density + pH + sulphates + alcohol, data = wine)
+
+rpart.plot(p, digits = 4, fallen.leaves = TRUE, uniform = TRUE, main = "Regression Tree") 
+
+printcp(p)
+
+summary(p)
+
+```
+
+
+#####**Weka Output**
+
+Below shows the results of the tree from Weka. Weka was only used to see the numerical results for both methods.
+
+Size of the tree : 211
+
+=== Summary ===
+
+Correlation coefficient                  0.6749
+Mean absolute error                      0.4867
+Root mean squared error                  0.6534
+Relative absolute error                 72.5541 %
+Root relative squared error             73.788  %
+Total Number of Instances               4898     
+
+
+```{r}
+white <- wine
+#converting the quality to a factor
+white$qualityFactor <- ifelse(white$quality < 6,"low", ifelse(white$quality == 6, "medium", "high"))
+table(white$qualityFactor)
+head(white)
+whitewine <- white[,-12]
+head(whitewine)
+```
+
+### Splitting the dataset to training and testing
+```{r}
+library(caret)
+#converting the qualityFactor column to  a factor which is chr type now
+whitewine$qualityFactor <- as.factor(whitewine$qualityFactor)
+#creating a partition
+trainingInd <- createDataPartition(white$quality, p = 2/3, list = F)
+#creating a training set
+train.white <- whitewine[trainingInd,]
+#creating a testing set
+test.white <- whitewine[-trainingInd,]
+```
+
+### Random Forest
+```{r}
+
+#controling the training method by using stratified cross validation with 5 folds and repeated 5 #times
+t.ctrl <- trainControl(method = "cv", number = 5,repeats = 5)
+#using parameter mtry from 1-11 to study the model efficiency
+rf.grid <- expand.grid(mtry = 1:11)
+#training a random forest using above 2 parameters
+rf.train <- train(qualityFactor ~., data = train.white, method = "rf",
+                  trControl = t.ctrl, tuneGrid = rf.grid, 
+                  preProcess = c("center", "scale"))
+plot(rf.train)
+```
+
+```{r}
+rf.train$bestTune
+rf.train$results
+```
+
+The accuracy of best tune is 70%.
+```{r}
+rf.predict <- predict(rf.train, test.white)
+confusionMatrix(rf.predict, test.white$qualityFactor)
+```
+
+### KNN Model
+```{r}
+library(kknn)
+#controling the training method by using stratified cross validation with 5 folds repeating 5 #times
+t.ctrl <- trainControl(method = "cv", number = 5, repeats = 5)
+#Parameter tuning 
+#k nearest neighbors = 3,5,7,9,11
+#distance measures 1:Manhattan distance,2:Euclidian distance
+#kernels used: "rectangular", "gaussian", "cos"
+kknn.grid <- expand.grid(kmax = c(3, 5, 7 ,9, 11), distance = c(1, 2),
+                         kernel = c("rectangular", "gaussian", "cos"))
+#the variables are in a different range so in pre processing we standardize the predictor #variables
+kknn.train <- train(qualityFactor ~ ., data = train.white, method = "kknn",
+                    trControl = t.ctrl, tuneGrid = kknn.grid,
+                    preProcess = c("center", "scale"))
+plot(kknn.train)
+```
+
+```{r}
+kknn.train$bestTune
+
+```
+
+```{r}
+kknn.predict <- predict(kknn.train, test.white)
+confusionMatrix(kknn.predict, test.white$qualityFactor)
+```
